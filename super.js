@@ -39,7 +39,6 @@ function declareClass(constructor, extendOrMethod0, method1, method2, etc) {
   var className = constructor.__SJS_name();
   if (!className) {
     throw "Named functions only";
-    return;
   }
   
   // Get the base class if there is one. Otherwise derive from Object.
