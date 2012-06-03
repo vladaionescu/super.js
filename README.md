@@ -8,7 +8,7 @@ Python or Java.
 
 ### Example
 
-'''JavaScript
+```javascript
 
 declareClass(
     function Mammal(hasHair, legs, arms, canSee) {
@@ -69,11 +69,11 @@ declarClass(
     }
 );
 
-'''
+```
 
 Use these as usual:
 
-'''JavaScript
+```javascript
 
 var myDog = new Dog(true);
 myDog.eat(someFood);
@@ -84,12 +84,12 @@ while(isDay()) {
     myBabyCat.sleep();
 }
 
-'''
+```
 
 
 ### Syntax
 
-'''
+```
 
 declareClass(
     function <ConstructorName>(<ContructorParams>) {
@@ -109,17 +109,17 @@ declareClass(
     ...
 );
 
-'''
+```
 
 
 ### this._super
 
-'''JavaScript
+```javascript
 
 this._super.constructor(...);   // Calls super's constructor.
 this._super.<MethodName>(...)   // Calls a super method.
 
-'''
+```
 
 
 ### Additional notes
