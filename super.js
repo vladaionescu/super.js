@@ -1,4 +1,3 @@
-
 'use strict';
 
 /*!
@@ -239,6 +238,10 @@ function extend(baseClass) {
 function superJSClassInit() {
   if (this.__ranSuperJSClassInit) {
     return;
+  }
+  
+  if (this === window) {
+    throw "Forgot 'new' on instantiation?";
   }
   
   this.__superLevel = 0;
