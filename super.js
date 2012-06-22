@@ -85,7 +85,7 @@ function declareClass(constructor, extendOrMethod0, method1, method2, etc) {
   var klass = window[className];
   
   // Inherit.
-  klass.prototype = superJSPrototypeClone(baseClass);
+  klass.prototype = superJSPrototypeMethodsClone(baseClass);
   klass.prototype.constructor = augmentedConstructor;
   klass.prototype.__parent = baseClass.prototype;
   
@@ -141,6 +141,31 @@ function declareClass(constructor, extendOrMethod0, method1, method2, etc) {
     superLevel++;
   }
   klass.prototype.__superMethods = superMethods;
+  
+  // Build __allMethods object - used as a base for inheriting classes.
+  klass.prototype.__allMethods = {};
+  for (var member in klass.prototype) {
+    if (member === "constructor") {
+      continue;
+    }
+    if (typeof klass.prototype[member] === "function") {
+      klass.prototype.__allMethods[member] = klass.prototype[member];
+    }
+  }
+  
+  // Alter all methods to include superLevel stack frame initialization.
+  // Note that we do this *after* creating the __allMethods object.
+  // TODO: Methods may have some operations repeatedly wrapped
+  // around them. It should be possible to only wrap once each method,
+  // and do different things depending on the superLevel the method comes from.
+  for (var member in klass.prototype) {
+    if (member === "constructor") {
+      continue;
+    }
+    if (typeof klass.prototype[member] === "function") {
+      klass.prototype[member] = superJSmethod(klass.prototype[member]);
+    }
+  }
   
   // Return class, in case user wants to use it immediately.
   return klass;
@@ -202,10 +227,10 @@ Function.prototype.__SJS_augmentBefore =
     var name = this.__SJS_name();
     var originalFunction = this;
     // TODO: Any easier/nicer way to return that function?
-    eval("window.__SJS_augmented = function " + name + "() {" +
-           "beforeFunction.apply(this, arguments);" +
-           "return originalFunction.apply(this, arguments);" +
-         "}");
+    eval("window.__SJS_augmented = function " + name + "() {\n" +
+         "\tbeforeFunction.apply(this, arguments);\n" +
+         "\treturn originalFunction.apply(this, arguments);\n" +
+         "}\n");
     return window.__SJS_augmented;
   }
 
@@ -241,7 +266,12 @@ function superJSClassInit() {
     return;
   }
   
+  if (this === window) {
+    throw "Forgot 'new' on instantiation?";
+  }
+  
   this.__superLevel = 0;
+  this.__superLevelStack = [];
   
   // Build a _super variable that represents a collection of functions that
   // call the equivalent super methods, with the correct "this".
@@ -281,13 +311,44 @@ function superJSsuperMethodAsParameter(theThis, methodName) {
 }
 
 /**
- * Just shallow-clones a class's prototype.
+ * Returns a function which wraps the provided method with superLevel++/--.
  */
-function superJSPrototypeClone(objectType) {
+function superJSsuperMethod(method) {
+  return function() {
+    this.__superLevel++;
+    try {
+      return method.apply(this, arguments);
+    } finally {
+      this.__superLevel--;
+    }
+  }
+}
+
+/**
+ * Wraps a given method with superLevel stack frame initialization code. 
+ */
+function superJSmethod(method) {
+  return function() {
+    this.__superLevelStack.push(this.__superLevel);
+    this.__superLevel = 0;
+    try {
+      return method.apply(this, arguments);
+    } finally {
+      this.__superLevel = this.__superLevelStack.pop();
+    }
+  }
+}
+
+/**
+ * Clones a class's methods, but wraps them with superLevel++/--.
+ */
+function superJSPrototypeMethodsClone(objectType) {
   var proto = objectType.prototype;
   var ret = {};
-  for (var member in proto) {
-    ret[member] = proto[member];
+  if ("__allMethods" in proto) {
+    for (var member in proto.__allMethods) {
+      ret[member] = superJSsuperMethod(proto.__allMethods[member]);
+    }
   }
   return ret;
 }
