@@ -64,7 +64,7 @@ declarClass(
         if (food.isFromMotherCat()) {
             alert("Meaaaw nom nom...");
         } else {
-            throw "NO!"
+            throw "NO!";
         }
     }
 );
